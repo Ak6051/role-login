@@ -1,88 +1,112 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Box } from '@mui/material';
+import {
+  Container,
+  Typography,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+} from '@mui/material';
+import { Download, Visibility } from '@mui/icons-material';
 import axios from 'axios';
 import Navbar from '../../components/hr components/HrNavbar';
 import Sidebar from '../../components/hr components/HrSidebar';
 
-const HRFormData = () => {
-  const [hrData, setHrData] = useState([]);
+const HrSettings = () => {
+  const [hrForms, setHrForms] = useState([]);
 
-  // Fetch data from the backend
-  const fetchHRData = async () => {
+  // Fetch HR Forms from the Backend
+  const fetchHRForms = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/hrform/fetch'); // Adjust the endpoint as needed
-      setHrData(response.data);
+      const response = await axios.get('http://localhost:5000/api/hrform/fetch');
+      setHrForms(response.data);
     } catch (error) {
-      console.error('Error fetching HRForm data:', error.message);
+      console.error('Failed to fetch HR forms:', error);
     }
   };
 
-  // Fetch data on component mount
+  // Handle Download
+  const handleDownload = (filePath) => {
+    const fileName = filePath.split('/').pop();
+    const link = document.createElement('a');
+    link.href = `http://localhost:5000/${filePath}`;
+    link.download = fileName;
+    link.click();
+  };
+
   useEffect(() => {
-    fetchHRData();
+    fetchHRForms();
   }, []);
 
   return (
-    <div style={{ display: 'flex' }}>
-      <Sidebar />
-      <Box sx={{ flexGrow: 1 }}>
-        <Navbar />
-        <Container sx={{ mt: 4 }}>
-          <Typography variant="h4" align="center" gutterBottom>
-            Submitted HR Form Data
-          </Typography>
-          <Box sx={{ overflowX: 'auto', mt: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><strong>Website URL</strong></TableCell>
-                  <TableCell><strong>Employee Count</strong></TableCell>
-                  <TableCell><strong>CV Files</strong></TableCell>
-                  <TableCell><strong>Date Submitted</strong></TableCell>
+    <div style={{ display: 'flex', height: '100vh' }}>
+    <Sidebar />
+    <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+      <Navbar />
+    <Container sx={{ mt: 4 }}>
+      <Typography variant="h4" align="center" gutterBottom>
+        HR Form Submissions
+      </Typography>
+      {hrForms.length === 0 ? (
+        <Typography align="center" color="textSecondary">
+          No data available.
+        </Typography>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Website URL</TableCell>
+                <TableCell align="center">Employee Count</TableCell>
+                <TableCell>CV Files</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {hrForms.map((form) => (
+                <TableRow key={form._id}>
+                  <TableCell>{form.websiteUrl}</TableCell>
+                  <TableCell align="center">{form.employeeCount}</TableCell>
+                  <TableCell>
+                    {form.cvFiles.map((file, index) => (
+                      <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="primary"
+                          startIcon={<Visibility />}
+                          href={`http://localhost:5000/${file.path}`}
+                          target="_blank"
+                          style={{ marginRight: 8 }}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="secondary"
+                          startIcon={<Download />}
+                          onClick={() => handleDownload(file.path)}
+                        >
+                          Download
+                        </Button>
+                      </div>
+                    ))}
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {hrData.map((form, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{form.websiteUrl}</TableCell>
-                    <TableCell>{form.employeeCount}</TableCell>
-                    <TableCell>
-                      {form.cvFiles &&
-                        form.cvFiles.map((file, idx) => {
-                          const fileName = file.split('\\').pop(); // Extract the filename
-                          return (
-                            <div key={idx}>
-                              {/* View Button */}
-                              <a 
-                                href={`http://localhost:5000/uploads/${fileName}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                style={{ textDecoration: 'none', color: '#007bff', marginRight: '10px' }}
-                              >
-                                View
-                              </a>
-                              {/* Download Button */}
-                              <a 
-                                href={`http://localhost:5000/uploads/${fileName}`} 
-                                download
-                                style={{ textDecoration: 'none', color: '#28a745' }}
-                              >
-                                Download
-                              </a>
-                            </div>
-                          );
-                        })}
-                    </TableCell>
-                    <TableCell>{new Date(form.createdAt).toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        </Container>
-      </Box>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Container>
+    </Box>
     </div>
   );
 };
 
-export default HRFormData;
+export default HrSettings;
